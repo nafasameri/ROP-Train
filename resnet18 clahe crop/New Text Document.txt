@@ -1,0 +1,68 @@
+C:\Users\NafasAmeri\anaconda3\envs\torch-gpu\python.exe "E:/ROP Train/resnet_18_torch.py"
+labels 0 902
+labels 1 796
+train_labels 0 710
+train_labels 1 648
+val_labels 0 192
+val_labels 1 148
+C:\Users\NafasAmeri\anaconda3\envs\torch-gpu\Lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+C:\Users\NafasAmeri\anaconda3\envs\torch-gpu\Lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=ResNet18_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet18_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Epoch 1, Training Loss: 0.6657, Validation Loss: 0.8028
+Epoch 2, Training Loss: 0.4596, Validation Loss: 0.7171
+Epoch 3, Training Loss: 0.3908, Validation Loss: 0.4206
+Epoch 4, Training Loss: 0.2871, Validation Loss: 0.5553
+Epoch 5, Training Loss: 0.2686, Validation Loss: 0.4526
+Epoch 6, Training Loss: 0.2245, Validation Loss: 4.3491
+Epoch 7, Training Loss: 0.2062, Validation Loss: 1.0377
+Epoch 8, Training Loss: 0.1661, Validation Loss: 0.5541
+Epoch 9, Training Loss: 0.1116, Validation Loss: 1.1496
+Epoch 10, Training Loss: 0.1080, Validation Loss: 0.5037
+Epoch 11, Training Loss: 0.0800, Validation Loss: 0.9675
+Epoch 12, Training Loss: 0.1624, Validation Loss: 2.0066
+Epoch 13, Training Loss: 0.1079, Validation Loss: 0.4856
+Epoch 14, Training Loss: 0.0798, Validation Loss: 0.6011
+Epoch 15, Training Loss: 0.0927, Validation Loss: 0.4191
+Epoch 16, Training Loss: 0.0464, Validation Loss: 0.4411
+Epoch 17, Training Loss: 0.0216, Validation Loss: 0.5871
+Epoch 18, Training Loss: 0.0171, Validation Loss: 0.5165
+Epoch 19, Training Loss: 0.0209, Validation Loss: 0.7505
+Epoch 20, Training Loss: 0.0561, Validation Loss: 3.1818
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+Accuracy: 0.6118
+Precision: 0.9444
+Recall: 0.1149
+F1 Score: 0.2048
+Confusion Matrix:
+[[191   1]
+ [131  17]]
+
+Normal
+Confusion matrix:{'Real Pos': {'tp': 17, 'fn': 131}, 'Real Neg': {'fp': 1, 'tn': 191}}
+Accuracy: 0.611764705882353
+Specificity: 0.9947916666666666
+Sensitivity: 0.11486486486486487
+Precision: 0.9444444444444444
+NPV: 0.593167701863354
+Dice coefficient: 0.20481927710843373
+Error Rate: 0.38823529411764707
+Jaccard similarity score: 0.3835926757512904
+The Matthews correlation coefficient: 0.24280173655337692
+fbeta micro: 0.611764705882353
+fbeta macro: 0.5158169533169533
+fbeta weighted: 0.532569735510912
+fbeta micro: 0.611764705882353
+fbeta macro: 0.5077455256429538
+fbeta weighted: 0.5554209832526783
+              precision    recall  f1-score   support
+
+      Normal       0.59      0.99      0.74       192
+        Plus       0.94      0.11      0.20       148
+
+    accuracy                           0.61       340
+   macro avg       0.77      0.55      0.47       340
+weighted avg       0.75      0.61      0.51       340
+
+
+Process finished with exit code 0

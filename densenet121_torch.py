@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 
 def evaluation(y_true, y_pred, labels, path_experiment):
     # Confusion matrix
-    # confusion = multilabel_confusion_matrix(y_true, y_pred)
     confusion = [confusion_matrix(y_true, y_pred)]
     print(confusion)
 
@@ -119,10 +118,6 @@ def evaluation(y_true, y_pred, labels, path_experiment):
     plt.savefig(path_experiment + 'roc-densenet121.png')
 
 
-
-# main
-
-
 # Custom Dataset Class
 class ROPDataset(Dataset):
     def __init__(self, image_paths, labels, transform=None):
@@ -135,37 +130,6 @@ class ROPDataset(Dataset):
 
     def __getitem__(self, idx):
         image = Image.open(self.image_paths[idx]).convert("RGB")
-        # img_tensor = preprocess(image).unsqueeze(0)  # Add batch dimension
-        # image = cv2.imread(self.image_paths[idx])
-
-        # # # pre-proccessing
-        # gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-        # clahe = cv2.createCLAHE(clipLimit=5)
-        # final_img = clahe.apply(gray_image) + 30
-
-        # # Ordinary thresholding the same image
-        # _, ordinary_img = cv2.threshold(gray_image, 155, 255, cv2.THRESH_BINARY)
-
-
-        # # Create a blank mask (same size as image)
-        # mask = np.zeros_like(gray_image)
-
-        # # Get image dimensions
-        # height, width = gray_image.shape[:2]
-        # center = (width // 2, height // 2)
-        # radius = min(center[0], center[1])  # Make the circle fit within the image dimensions
-
-        # # Draw a white circle in the mask
-        # cv2.circle(mask, center, radius, (255), thickness=-1)
-
-        # # Apply mask to the image
-        # masked_image = cv2.bitwise_and(image, image, mask=mask)
-
-        # masked_image_rgb = cv2.cvtColor(final_img, cv2.COLOR_BGR2RGB)
-
-        # # Convert the OpenCV NumPy array to PIL Image
-        # image = Image.fromarray(masked_image_rgb)
 
         label = self.labels[idx]
         if self.transform:
@@ -176,11 +140,6 @@ class ROPDataset(Dataset):
 class ROPClassifier(nn.Module):
     def __init__(self, num_classes=2):
         super(ROPClassifier, self).__init__()
-        # self.model = models.resnet18(pretrained=True)  # Using a pretrained ResNet18
-        # self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
-
-        # self.model = models.vgg16(pretrained=True)  # Using a pretrained ResNet18
-
         # self.model = models.inception_v3(pretrained=True)
 
         self.model = models.densenet121(pretrained=True)
@@ -201,42 +160,35 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-# # Preprocessing for the input image
-# transform = transforms.Compose([
-#     transforms.Resize((299, 299)),
-#     transforms.ToTensor(),
-#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-# ])
-
 # Load Data
-image_dir = 'D:/ROP/dataset/'
-# label_file = "path_to_labels.csv"
-
-# Assuming label_file contains image names and labels
-# labels = [0, 1]  # Replace with actual labels loaded from your CSV
-# image_paths = [os.path.join(image_dir, img_name) for img_name in os.listdir(image_dir) if img_name == "0" or img_name == "1"]
+image_dir = 'E:/ROP/dataset/'
 
 def load_images_from_folder(folder):
     images = []
     labels = []
     for label in ['0', '1']:
-        path = os.path.join(folder, 'Clahe_mask_' + label)
-        # path = os.path.join(folder, 'AMSR_mask_' + label)
-        #path = os.path.join(folder, label + ' cropped-preproccessing')
-        #path = os.path.join(folder, label + 'preproccessing')
-
+        path = os.path.join(folder, label)
         for filename in os.listdir(path):
-            # print(filename)
-            images.append(os.path.join(path, filename))
+            # if (len(images) < 50 and label == '0') or (len(images) < 100 and label == '1'):
+            images.append([os.path.join(path, filename), os.path.join(folder, 'preprocessing', label, filename)])
             labels.append(int(label))
 
     return images, labels
 
 image_paths, labels = load_images_from_folder(image_dir)
-# print(image_paths)
 
 # Split data into train and validation sets
 train_paths, val_paths, train_labels, val_labels = train_test_split(image_paths, labels, test_size=0.2, random_state=42)
+train_paths = np.array(train_paths)
+val_paths = np.array(val_paths)
+
+print('labels 0', len([l for l in labels if l == 0]))
+print('labels 1', len([l for l in labels if l == 1]))
+print('train_labels 0', len([l for l in train_labels if l == 0]))
+print('train_labels 1', len([l for l in train_labels if l == 1]))
+print('val_labels 0', len([l for l in val_labels if l == 0]))
+print('val_labels 1', len([l for l in val_labels if l == 1]))
+
 
 # Create Dataset and DataLoader
 train_dataset = ROPDataset(train_paths, train_labels, transform=transform)
@@ -247,16 +199,13 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 # Initialize model, loss, and optimizer
 model = ROPClassifier(num_classes=2)
 criterion = nn.CrossEntropyLoss()
-# criterion = nn.BCEWithLogitsLoss()
-# criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Training Loop
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
+print('runing on device', device)
 
-# Early stopping setup
-# early_stopping = EarlyStopping(patience=7, verbose=True)
 
 history = []
 
@@ -270,17 +219,6 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels)
-
-        # if isinstance(outputs, tuple):
-        #     logits, aux_logits = outputs  # Unpack the outputs
-        # else:
-        #     logits = outputs  # Some cases (like evaluation mode) may return only logits
-
-        # logits = logits.squeeze(1)  # Match logits shape to labels
-
-        # # Compute loss
-        # loss = criterion(logits, labels)
-
 
         loss.backward()
         optimizer.step()
@@ -304,98 +242,9 @@ for epoch in range(num_epochs):
     print(f"Epoch {epoch+1}, Training Loss: {running_loss/len(train_loader):.4f}, Validation Loss: {val_loss:.4f}")
     history.append([running_loss/len(train_loader), val_loss])
 
-    # Check early stopping condition
-    # early_stopping(val_loss, model)
-    # if early_stopping.early_stop:
-    #     print("Early stopping triggered.")
-    #     break
-
-    # history.append(running_loss/len(train_loader))
-    # print(f"Epoch {epoch+1}/{num_epochs}, Loss: {running_loss/len(train_loader)}")
-
-# train_losses, val_losses, train_accs, val_accs = [], [], [], []
-# for epoch in range(num_epochs):
-#     # Training
-#     model.train()
-#     running_loss = 0.0
-#     correct_train, total_train = 0, 0
-
-#     for images, labels in train_loader:
-#         images, labels = images.to(device), labels.to(device)
-
-#         # Forward pass
-#         outputs = model(images)
-#         loss = criterion(outputs, labels)
-
-#         # Backward pass and optimization
-#         optimizer.zero_grad()
-#         loss.backward()
-#         optimizer.step()
-
-#         # Track training loss and accuracy
-#         running_loss += loss.item()
-#         _, predicted = torch.max(outputs.data, 1)
-#         total_train += labels.size(0)
-#         correct_train += (predicted == labels).sum().item()
-
-#     train_loss = running_loss / len(train_loader)
-#     train_acc = 100 * correct_train / total_train
-#     train_losses.append(train_loss)
-#     train_accs.append(train_acc)
-
-#     # Validation
-#     model.eval()
-#     running_val_loss = 0.0
-#     correct_val, total_val = 0, 0
-
-#     with torch.no_grad():
-#         for images, labels in val_loader:
-#             images, labels = images.to(device), labels.to(device)
-#             outputs = model(images)
-#             loss = criterion(outputs, labels)
-
-#             # Track validation loss and accuracy
-#             running_val_loss += loss.item()
-#             _, predicted = torch.max(outputs.data, 1)
-#             total_val += labels.size(0)
-#             correct_val += (predicted == labels).sum().item()
-
-#     val_loss = running_val_loss / len(val_loader)
-#     val_acc = 100 * correct_val / total_val
-#     val_losses.append(val_loss)
-#     val_accs.append(val_acc)
-
-#     print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%")
-
-# # Plot training and validation metrics
-# epochs_range = range(1, num_epochs + 1)
-# plt.figure(figsize=(12, 5))
-
-# # Plot loss
-# plt.subplot(1, 2, 1)
-# plt.plot(epochs_range, train_losses, label="Train Loss")
-# plt.plot(epochs_range, val_losses, label="Validation Loss")
-# plt.xlabel("Epoch")
-# plt.ylabel("Loss")
-# plt.title("Training and Validation Loss")
-# plt.legend()
-
-# # Plot accuracy
-# plt.subplot(1, 2, 2)
-# plt.plot(epochs_range, train_accs, label="Train Accuracy")
-# plt.plot(epochs_range, val_accs, label="Validation Accuracy")
-# plt.xlabel("Epoch")
-# plt.ylabel("Accuracy")
-# plt.title("Training and Validation Accuracy")
-# plt.legend()
-
-# plt.show()
-
 
 # Save the trained model
 torch.save(model.state_dict(), os.path.join(image_dir, "rop_classifier_densenet121.pth"))
-# Load the best model
-# model.load_state_dict(torch.load(os.path.join(image_dir, 'checkpoint_resnet18.pt')))
 
 
 # Load the saved model
@@ -447,5 +296,4 @@ plt.plot(history, label='Train Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
-# plt.show()
 plt.savefig('loss-densenet121.png')

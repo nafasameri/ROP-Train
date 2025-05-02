@@ -1,40 +1,27 @@
-import numpy as np
-from sklearn.metrics import roc_auc_score, classification_report, fbeta_score
-from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import classification_report, fbeta_score
 from sklearn.metrics import jaccard_score
-from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
 from sklearn.metrics import matthews_corrcoef
-import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.datasets import make_classification
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms, models
+from sklearn.model_selection import train_test_split
+from PIL import Image
+import os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
-def roc_auc_score_multiclass(actual_class, pred_class, average = "macro"):
-
-    #creating a set of all the unique classes using the actual class list
-    unique_class = set(actual_class)
-    roc_auc_dict = {}
-    for per_class in unique_class:
-
-        #creating a list of all the classes except the current class
-        other_class = [x for x in unique_class if x != per_class]
-
-        #marking the current class as 1 and all other classes as 0
-        new_actual_class = [0 if x in other_class else 1 for x in actual_class]
-        new_pred_class = [0 if x in other_class else 1 for x in pred_class]
-
-        #using the sklearn metrics method to calculate the roc_auc_score
-        roc_auc = roc_auc_score(new_actual_class, new_pred_class, average = average)
-        roc_auc_dict[per_class] = roc_auc
-
-    return roc_auc_dict
+import clahe
+import amsr
 
 
 def evaluation(y_true, y_pred, labels, path_experiment):
     # Confusion matrix
-    # confusion = multilabel_confusion_matrix(y_true, y_pred)
     confusion = [confusion_matrix(y_true, y_pred)]
-    print(confusion)
 
     for i, v in enumerate(confusion):
         tn, fp, fn, tp = v.ravel()
@@ -129,27 +116,14 @@ def evaluation(y_true, y_pred, labels, path_experiment):
     plt.title('Receiver Operating Characteristic (ROC) Curve')
     plt.legend(loc="lower right")
     plt.grid()
-    plt.show()
+    plt.savefig('roc-resnet18.png')
 
-
-
-# main
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms, models
-from sklearn.model_selection import train_test_split
-from PIL import Image
-import os
-import matplotlib.pyplot as plt
-import cv2
 
 # Custom Dataset Class
 class ROPDataset(Dataset):
-    def __init__(self, image_paths, labels, transform=None):
+    def __init__(self, image_paths, image_preprocessing_paths, labels, transform=None):
         self.image_paths = image_paths
+        self.image_preprocessing_paths = image_preprocessing_paths
         self.labels = labels
         self.transform = transform
 
@@ -157,7 +131,10 @@ class ROPDataset(Dataset):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
-        image = Image.open(self.image_paths[idx]).convert("RGB")
+        # clahe.perproccessing(self.image_paths[idx], self.image_preprocessing_paths[idx])
+        amsr.perproccessing(self.image_paths[idx], self.image_preprocessing_paths[idx])
+
+        image = Image.open(self.image_preprocessing_paths[idx]).convert("RGB")
         label = self.labels[idx]
         if self.transform:
             image = self.transform(image)
@@ -168,7 +145,6 @@ class ROPClassifier(nn.Module):
     def __init__(self, num_classes=2):
         super(ROPClassifier, self).__init__()
         self.model = models.resnet18(pretrained=True)  # Using a pretrained ResNet18
-        # self.model = models.vgg16(pretrained=True)  # Using a pretrained ResNet18
         self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
 
     def forward(self, x):
@@ -177,7 +153,7 @@ class ROPClassifier(nn.Module):
 # Hyperparameters
 batch_size = 32
 learning_rate = 0.001
-num_epochs = 200
+num_epochs = 20
 
 # Data Transformations (resize, normalize, etc.)
 transform = transforms.Compose([
@@ -187,37 +163,36 @@ transform = transforms.Compose([
 ])
 
 # Load Data
-image_dir = 'D:/ROP/dataset/'
-# label_file = "path_to_labels.csv"
-
-# Assuming label_file contains image names and labels
-# labels = [0, 1]  # Replace with actual labels loaded from your CSV
-# image_paths = [os.path.join(image_dir, img_name) for img_name in os.listdir(image_dir) if img_name == "0" or img_name == "1"]
+image_dir = 'E:/ROP/dataset/'
 
 def load_images_from_folder(folder):
     images = []
     labels = []
     for label in ['0', '1']:
-        path = os.path.join(folder, 'AMSR_mask_' + label)
-        #path = os.path.join(folder, label + ' cropped-preproccessing')
-        #path = os.path.join(folder, label + 'preproccessing')
-
+        path = os.path.join(folder, label)
         for filename in os.listdir(path):
-            # print(filename)
-            images.append(os.path.join(path, filename))
+            images.append([os.path.join(path, filename), os.path.join(folder, 'preprocessing', label, filename)])
             labels.append(int(label))
 
     return images, labels
 
 image_paths, labels = load_images_from_folder(image_dir)
-# print(image_paths)
 
 # Split data into train and validation sets
 train_paths, val_paths, train_labels, val_labels = train_test_split(image_paths, labels, test_size=0.2, random_state=42)
+train_paths = np.array(train_paths)
+val_paths = np.array(val_paths)
+
+print('labels 0', len([l for l in labels if l == 0]))
+print('labels 1', len([l for l in labels if l == 1]))
+print('train_labels 0', len([l for l in train_labels if l == 0]))
+print('train_labels 1', len([l for l in train_labels if l == 1]))
+print('val_labels 0', len([l for l in val_labels if l == 0]))
+print('val_labels 1', len([l for l in val_labels if l == 1]))
 
 # Create Dataset and DataLoader
-train_dataset = ROPDataset(train_paths, train_labels, transform=transform)
-val_dataset = ROPDataset(val_paths, val_labels, transform=transform)
+train_dataset = ROPDataset(train_paths[:, 0], train_paths[:, 1], train_labels, transform=transform)
+val_dataset = ROPDataset(val_paths[:, 0], val_paths[:, 1], val_labels, transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
@@ -229,9 +204,6 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 # Training Loop
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-
-# Early stopping setup
-# early_stopping = EarlyStopping(patience=7, verbose=True)
 
 history = []
 
@@ -269,8 +241,6 @@ for epoch in range(num_epochs):
 
 # Save the trained model
 torch.save(model.state_dict(), os.path.join(image_dir, "rop_classifier_resnet18_amsr_mask.pth"))
-# Load the best model
-# model.load_state_dict(torch.load(os.path.join(image_dir, 'checkpoint_resnet18.pt')))
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 # Load the saved model
@@ -315,8 +285,9 @@ print(conf_matrix)
 
 evaluation(test_labels, test_preds, ['Normal', 'Plus'], '')
 
+plt.figure(figsize=(8, 6))
 plt.plot(history, label='Train Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
-plt.show()
+plt.savefig('loss-resnet18.png')

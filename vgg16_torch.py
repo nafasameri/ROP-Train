@@ -1,18 +1,24 @@
-import numpy as np
-from sklearn.metrics import roc_auc_score, classification_report, fbeta_score
-from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import classification_report, fbeta_score
 from sklearn.metrics import jaccard_score
-from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
 from sklearn.metrics import matthews_corrcoef
-import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.datasets import make_classification
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms, models
+from sklearn.model_selection import train_test_split
+from PIL import Image
+import os
+import matplotlib.pyplot as plt
+
+import clahe
+import amsr
 
 
 def evaluation(y_true, y_pred, labels, path_experiment):
     # Confusion matrix
-    # confusion = multilabel_confusion_matrix(y_true, y_pred)
     confusion = [confusion_matrix(y_true, y_pred)]
     print(confusion)
 
@@ -112,25 +118,11 @@ def evaluation(y_true, y_pred, labels, path_experiment):
     plt.savefig('roc-vgg16.png')
 
 
-
-
-# main
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms, models
-from sklearn.model_selection import train_test_split
-from PIL import Image
-import os
-import matplotlib.pyplot as plt
-import cv2
-
 # Custom Dataset Class
 class ROPDataset(Dataset):
-    def __init__(self, image_paths, labels, transform=None):
+    def __init__(self, image_paths, image_preprocessing_paths, labels, transform=None):
         self.image_paths = image_paths
+        self.image_preprocessing_paths = image_preprocessing_paths
         self.labels = labels
         self.transform = transform
 
@@ -138,8 +130,10 @@ class ROPDataset(Dataset):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
-        image = Image.open(self.image_paths[idx]).convert("RGB")
+        # clahe.perproccessing(self.image_paths[idx], self.image_preprocessing_paths[idx])
+        amsr.perproccessing(self.image_paths[idx], self.image_preprocessing_paths[idx])
 
+        image = Image.open(self.image_preprocessing_paths[idx]).convert("RGB")
         label = self.labels[idx]
         if self.transform:
             image = self.transform(image)
@@ -149,11 +143,10 @@ class ROPDataset(Dataset):
 class ROPClassifier(nn.Module):
     def __init__(self, num_classes=2):
         super(ROPClassifier, self).__init__()
-        # self.model = models.resnet18(pretrained=True)  # Using a pretrained ResNet18
         # self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
         self.model = models.vgg16(pretrained=True)  # Using a pretrained ResNet18
-		
-		# Freeze all layers initially
+
+        # Freeze all layers initially
         for param in self.model.parameters():
             param.requires_grad = False
             
@@ -167,7 +160,7 @@ class ROPClassifier(nn.Module):
             nn.Dropout(p=0.5),
             nn.Linear(4096, num_classes)
         )
-		
+
     def forward(self, x):
         return self.model(x)
 
@@ -184,35 +177,36 @@ transform = transforms.Compose([
 ])
 
 # Load Data
-image_dir = 'D:/ROP/dataset/'
+image_dir = 'E:/ROP/dataset/'
 
 def load_images_from_folder(folder):
     images = []
     labels = []
     for label in ['0', '1']:
         path = os.path.join(folder, label)
-        # path = os.path.join(folder, 'ML_' + label)
-        # path = os.path.join(folder, 'Clahe_mask_' + label)
-        # path = os.path.join(folder, 'AMSR_mask_' + label)
-        # path = os.path.join(folder, label + 'preproccessing')
-        # path = os.path.join(folder, label + ' cropped-preproccessing')
-
         for filename in os.listdir(path):
-            # print(filename)
-            images.append(os.path.join(path, filename))
+            images.append([os.path.join(path, filename), os.path.join(folder, 'preprocessing', label, filename)])
             labels.append(int(label))
 
     return images, labels
 
 image_paths, labels = load_images_from_folder(image_dir)
-# print(image_paths)
 
 # Split data into train and validation sets
 train_paths, val_paths, train_labels, val_labels = train_test_split(image_paths, labels, test_size=0.2, random_state=42)
+train_paths = np.array(train_paths)
+val_paths = np.array(val_paths)
+
+print('labels 0', len([l for l in labels if l == 0]))
+print('labels 1', len([l for l in labels if l == 1]))
+print('train_labels 0', len([l for l in train_labels if l == 0]))
+print('train_labels 1', len([l for l in train_labels if l == 1]))
+print('val_labels 0', len([l for l in val_labels if l == 0]))
+print('val_labels 1', len([l for l in val_labels if l == 1]))
 
 # Create Dataset and DataLoader
-train_dataset = ROPDataset(train_paths, train_labels, transform=transform)
-val_dataset = ROPDataset(val_paths, val_labels, transform=transform)
+train_dataset = ROPDataset(train_paths[:, 0], train_paths[:, 1], train_labels, transform=transform)
+val_dataset = ROPDataset(val_paths[:, 0], val_paths[:, 1], val_labels, transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
@@ -224,9 +218,6 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 # Training Loop
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-
-# Early stopping setup
-# early_stopping = EarlyStopping(patience=7, verbose=True)
 
 history = []
 
@@ -310,6 +301,7 @@ print(conf_matrix)
 
 evaluation(test_labels, test_preds, ['Normal', 'Plus'], '')
 
+plt.figure(figsize=(8, 6))
 plt.plot(history, label='Train Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
