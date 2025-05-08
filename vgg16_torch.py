@@ -131,7 +131,7 @@ class ROPDataset(Dataset):
 
     def __getitem__(self, idx):
         # clahe.perproccessing(self.image_paths[idx], self.image_preprocessing_paths[idx])
-        amsr.perproccessing(self.image_paths[idx], self.image_preprocessing_paths[idx])
+        # amsr.perproccessing(self.image_paths[idx], self.image_preprocessing_paths[idx])
 
         image = Image.open(self.image_preprocessing_paths[idx]).convert("RGB")
         label = self.labels[idx]
@@ -166,7 +166,7 @@ class ROPClassifier(nn.Module):
 
 # Hyperparameters
 batch_size = 32
-learning_rate = 0.0001
+learning_rate = 0.00001
 num_epochs = 200
 
 # Data Transformations (resize, normalize, etc.)
@@ -177,15 +177,15 @@ transform = transforms.Compose([
 ])
 
 # Load Data
-image_dir = 'E:/ROP/dataset/'
+image_dir = 'D:/ROP/dataset/'
 
 def load_images_from_folder(folder):
     images = []
     labels = []
     for label in ['0', '1']:
-        path = os.path.join(folder, label)
+        path = os.path.join(folder, 'clahe', label)
         for filename in os.listdir(path):
-            images.append([os.path.join(path, filename), os.path.join(folder, 'preprocessing', label, filename)])
+            images.append([os.path.join(path, filename), os.path.join(folder, 'clahe', label, filename)])
             labels.append(int(label))
 
     return images, labels
@@ -255,7 +255,7 @@ for epoch in range(num_epochs):
 
 
 # Save the trained model
-torch.save(model.state_dict(), os.path.join(image_dir, "rop_classifier_vgg16_Clahe.pth"))
+torch.save(model.state_dict(), os.path.join(image_dir, "rop_classifier_vgg16_clahe.pth"))
 
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix

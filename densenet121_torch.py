@@ -115,13 +115,14 @@ def evaluation(y_true, y_pred, labels, path_experiment):
     plt.legend(loc="lower right")
     plt.grid()
     # plt.show()
-    plt.savefig(path_experiment + 'roc-densenet121.png')
+    plt.savefig('roc-densenet121.png')
 
 
 # Custom Dataset Class
 class ROPDataset(Dataset):
-    def __init__(self, image_paths, labels, transform=None):
+    def __init__(self, image_paths, image_preprocessing_paths, labels, transform=None):
         self.image_paths = image_paths
+        self.image_preprocessing_paths = image_preprocessing_paths
         self.labels = labels
         self.transform = transform
 
@@ -129,8 +130,10 @@ class ROPDataset(Dataset):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
-        image = Image.open(self.image_paths[idx]).convert("RGB")
+        # clahe.perproccessing(self.image_paths[idx], self.image_preprocessing_paths[idx])
+        # amsr.perproccessing(self.image_paths[idx], self.image_preprocessing_paths[idx])
 
+        image = Image.open(self.image_preprocessing_paths[idx]).convert("RGB")
         label = self.labels[idx]
         if self.transform:
             image = self.transform(image)
@@ -161,16 +164,15 @@ transform = transforms.Compose([
 ])
 
 # Load Data
-image_dir = 'E:/ROP/dataset/'
+image_dir = 'D:/ROP/dataset/'
 
 def load_images_from_folder(folder):
     images = []
     labels = []
     for label in ['0', '1']:
-        path = os.path.join(folder, label)
+        path = os.path.join(folder, 'clahe', label)
         for filename in os.listdir(path):
-            # if (len(images) < 50 and label == '0') or (len(images) < 100 and label == '1'):
-            images.append([os.path.join(path, filename), os.path.join(folder, 'preprocessing', label, filename)])
+            images.append([os.path.join(path, filename), os.path.join(folder, 'clahe', label, filename)])
             labels.append(int(label))
 
     return images, labels
@@ -191,8 +193,8 @@ print('val_labels 1', len([l for l in val_labels if l == 1]))
 
 
 # Create Dataset and DataLoader
-train_dataset = ROPDataset(train_paths, train_labels, transform=transform)
-val_dataset = ROPDataset(val_paths, val_labels, transform=transform)
+train_dataset = ROPDataset(train_paths[:, 0], train_paths[:, 1], train_labels, transform=transform)
+val_dataset = ROPDataset(val_paths[:, 0], val_paths[:, 1], val_labels, transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 

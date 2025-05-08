@@ -1,38 +1,23 @@
+import os
 import numpy as np
-from sklearn.metrics import roc_auc_score, classification_report, fbeta_score
-from sklearn.metrics import precision_recall_curve
+import tensorflow as tf
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
+from tensorflow.keras.applications import MobileNet
+from tensorflow.keras.optimizers import Adam
+from sklearn.model_selection import train_test_split
+from PIL import Image
+import cv2
+from sklearn.metrics import classification_report, fbeta_score
 from sklearn.metrics import jaccard_score
-from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
+from sklearn.metrics import confusion_matrix
 from sklearn.metrics import matthews_corrcoef
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.datasets import make_classification
-
-def roc_auc_score_multiclass(actual_class, pred_class, average = "macro"):
-
-    #creating a set of all the unique classes using the actual class list
-    unique_class = set(actual_class)
-    roc_auc_dict = {}
-    for per_class in unique_class:
-
-        #creating a list of all the classes except the current class
-        other_class = [x for x in unique_class if x != per_class]
-
-        #marking the current class as 1 and all other classes as 0
-        new_actual_class = [0 if x in other_class else 1 for x in actual_class]
-        new_pred_class = [0 if x in other_class else 1 for x in pred_class]
-
-        #using the sklearn metrics method to calculate the roc_auc_score
-        roc_auc = roc_auc_score(new_actual_class, new_pred_class, average = average)
-        roc_auc_dict[per_class] = roc_auc
-
-    return roc_auc_dict
 
 
 def evaluation(y_true, y_pred, labels, path_experiment):
     # Confusion matrix
-    # confusion = multilabel_confusion_matrix(y_true, y_pred)
     confusion = [confusion_matrix(y_true, y_pred)]
     print(confusion)
 
@@ -129,28 +114,9 @@ def evaluation(y_true, y_pred, labels, path_experiment):
     plt.title('Receiver Operating Characteristic (ROC) Curve')
     plt.legend(loc="lower right")
     plt.grid()
-    plt.show()
+    plt.savefig('roc-mobilenet.png')
 
 
-
-
-# main
-
-import os
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
-from tensorflow.keras.applications import ResNet50, VGG16, VGG19
-from tensorflow.keras.applications import MobileNet
-from tensorflow.keras.optimizers import Adam
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix
-import matplotlib.pyplot as plt
-from PIL import Image
-import cv2
-from keras.utils import plot_model
 
 # Load images and labels
 def load_images_from_folder(folder):
@@ -174,23 +140,7 @@ train_paths, val_paths, train_labels, val_labels = train_test_split(image_paths,
 
 # Preprocessing function for data loading
 def preprocess_image(image_path):
-    try:
-        img = cv2.imread(image_path)
-
-        clip_limit = 6.0         # Contrast limit
-        tile_grid_size = (4, 4)  # Size of the grid (width, height)
-
-        # Create a CLAHE object with the specified parameters
-        clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=tile_grid_size)
-
-        # Apply CLAHE to the image
-        clahe_img = clahe.apply(img)
-
-        preprocessed_image = cv2.merge([clahe_img]*3)
-        print("preprocessed")
-    except:
-        # print("except")
-        img = Image.open(image_path).convert("RGB").resize((224, 224))
+    img = Image.open(image_path).convert("RGB").resize((224, 224))
 
     img_array = np.array(img) / 255.0  # Normalize pixel values
     return img_array

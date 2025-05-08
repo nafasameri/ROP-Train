@@ -1,38 +1,22 @@
+import os
 import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
+from tensorflow.keras.applications import ResNet50, VGG16
+from tensorflow.keras.optimizers import Adam
+from sklearn.model_selection import train_test_split
+from PIL import Image
 from sklearn.metrics import roc_auc_score, classification_report, fbeta_score
-from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import jaccard_score
-from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
+from sklearn.metrics import confusion_matrix
 from sklearn.metrics import matthews_corrcoef
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.datasets import make_classification
-
-def roc_auc_score_multiclass(actual_class, pred_class, average = "macro"):
-
-    #creating a set of all the unique classes using the actual class list
-    unique_class = set(actual_class)
-    roc_auc_dict = {}
-    for per_class in unique_class:
-
-        #creating a list of all the classes except the current class
-        other_class = [x for x in unique_class if x != per_class]
-
-        #marking the current class as 1 and all other classes as 0
-        new_actual_class = [0 if x in other_class else 1 for x in actual_class]
-        new_pred_class = [0 if x in other_class else 1 for x in pred_class]
-
-        #using the sklearn metrics method to calculate the roc_auc_score
-        roc_auc = roc_auc_score(new_actual_class, new_pred_class, average = average)
-        roc_auc_dict[per_class] = roc_auc
-
-    return roc_auc_dict
 
 
 def evaluation(y_true, y_pred, labels, path_experiment):
     # Confusion matrix
-    # confusion = multilabel_confusion_matrix(y_true, y_pred)
     confusion = [confusion_matrix(y_true, y_pred)]
     print(confusion)
 
@@ -129,62 +113,40 @@ def evaluation(y_true, y_pred, labels, path_experiment):
     plt.title('Receiver Operating Characteristic (ROC) Curve')
     plt.legend(loc="lower right")
     plt.grid()
-    plt.savefig('roc-resnet50-asmr.png')
+    plt.savefig('roc-resnet50.png')
 
-
-
-
-# main
-import os
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
-from tensorflow.keras.applications import ResNet50, VGG16
-from tensorflow.keras.optimizers import Adam
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix
-import matplotlib.pyplot as plt
-from PIL import Image
-import cv2
-from keras.utils import plot_model
 
 # Load images and labels
+image_dir = 'D:/ROP/dataset/'
+
 def load_images_from_folder(folder):
     images = []
     labels = []
     for label in ['0', '1']:
-        path = os.path.join(folder, 'AMSR_mask_' + label)
-        # path = os.path.join(folder, label + 'preproccessing')
-        # path = os.path.join(folder, label + ' cropped-preproccessing')
+        path = os.path.join(folder, 'clahe', label)
         for filename in os.listdir(path):
-            images.append(os.path.join(path, filename))
+            images.append([os.path.join(path, filename), os.path.join(folder, 'clahe', label, filename)])
             labels.append(int(label))
+
     return images, labels
 
-image_dir = 'D:/ROP/dataset/'
 image_paths, labels = load_images_from_folder(image_dir)
 
 # Split data into train and validation sets
 train_paths, val_paths, train_labels, val_labels = train_test_split(image_paths, labels, test_size=0.2, random_state=42)
+train_paths = np.array(train_paths)
+val_paths = np.array(val_paths)
+
+print('labels 0', len([l for l in labels if l == 0]))
+print('labels 1', len([l for l in labels if l == 1]))
+print('train_labels 0', len([l for l in train_labels if l == 0]))
+print('train_labels 1', len([l for l in train_labels if l == 1]))
+print('val_labels 0', len([l for l in val_labels if l == 0]))
+print('val_labels 1', len([l for l in val_labels if l == 1]))
+
 
 # Preprocessing function for data loading
 def preprocess_image(image_path):
-    # try:
-    #     img = cv2.imread(image_path)
-    #
-    #     clip_limit = 6.0         # Contrast limit
-    #     tile_grid_size = (4, 4)  # Size of the grid (width, height)
-    #
-    #     # Create a CLAHE object with the specified parameters
-    #     clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=tile_grid_size)
-    #
-    #     # Apply CLAHE to the image
-    #     clahe_img = clahe.apply(img)
-    #
-    #     preprocessed_image = cv2.merge([clahe_img]*3)
-    # except:
     img = Image.open(image_path).convert("RGB").resize((224, 224))
 
     img_array = np.array(img) / 255.0  # Normalize pixel values
@@ -226,12 +188,12 @@ model = Model(inputs=base_model.input, outputs=predictions)
 # )
 
 # Create data generators
-train_gen = data_generator(train_paths, train_labels, batch_size)
-val_gen = data_generator(val_paths, val_labels, batch_size)
+train_gen = data_generator(train_paths[:, 1], train_labels, batch_size)
+val_gen = data_generator(val_paths[:, 1], val_labels, batch_size)
 
 # Train the model
-steps_per_epoch = len(train_paths) // batch_size
-validation_steps = len(val_paths) // batch_size
+steps_per_epoch = len(train_paths[:, 1]) // batch_size
+validation_steps = len(val_paths[:, 1]) // batch_size
 
 # Unfreeze base model layers for fine-tuning
 for layer in base_model.layers:
@@ -240,23 +202,6 @@ for layer in base_model.layers:
 model.compile(optimizer=Adam(learning_rate=learning_rate), loss="binary_crossentropy", metrics=["accuracy"])
 
 model.summary()
-
-# # Plot the ResNet50 model architecture
-# plot_model(
-#     model,
-#     to_file="resnet50_model.png",  # Save the plot as an image file
-#     show_shapes=True,              # Show the input and output shapes
-#     show_layer_names=True,         # Show the names of each layer
-#     rankdir="TB",                  # Top-to-bottom layout
-#     dpi=150                        # High resolution for better quality
-# )
-
-# from IPython.display import SVG
-# from keras.utils import model_to_dot
-
-# # Display the model inline as SVG
-# SVG(model_to_dot(model, show_shapes=True, rankdir="LR").create_svg())
-
 
 # Fine-tune the model
 history = model.fit(
