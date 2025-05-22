@@ -1,9 +1,7 @@
 from sklearn.metrics import classification_report, fbeta_score
 from sklearn.metrics import jaccard_score
-from sklearn.metrics import confusion_matrix
 from sklearn.metrics import matthews_corrcoef
 from sklearn.metrics import roc_curve, auc
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import numpy as np
 import torch
 import torch.nn as nn
@@ -14,6 +12,9 @@ from sklearn.model_selection import train_test_split
 from PIL import Image
 import os
 import matplotlib.pyplot as plt
+
+import clahe
+import amsr
 
 
 def evaluation(y_true, y_pred, labels, path_experiment):
@@ -95,7 +96,7 @@ def evaluation(y_true, y_pred, labels, path_experiment):
 
     rep = classification_report(y_true, y_pred, target_names=labels)
     print(rep)
-    file_perf = open(path_experiment + 'classification_report.txt', 'w')
+    file_perf = open(path_experiment + 'classification_report-vgg19.txt', 'w')
     file_perf.write(rep)
     file_perf.close()
 
@@ -114,8 +115,7 @@ def evaluation(y_true, y_pred, labels, path_experiment):
     plt.title('Receiver Operating Characteristic (ROC) Curve')
     plt.legend(loc="lower right")
     plt.grid()
-    # plt.show()
-    plt.savefig('roc-densenet121.png')
+    plt.savefig('roc-vgg19.png')
 
 
 # Custom Dataset Class
@@ -143,17 +143,30 @@ class ROPDataset(Dataset):
 class ROPClassifier(nn.Module):
     def __init__(self, num_classes=2):
         super(ROPClassifier, self).__init__()
-        # self.model = models.inception_v3(pretrained=True)
+        # self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
+        self.model = models.vgg19(pretrained=True)  # Using a pretrained ResNet18
 
-        self.model = models.densenet121(pretrained=True)
-        self.model.classifier = torch.nn.Linear(self.model.classifier.in_features, num_classes)
+        # Freeze all layers initially
+        for param in self.model.parameters():
+            param.requires_grad = False
+            
+        # Modify the classifier part
+        self.model.classifier = nn.Sequential(
+            nn.Linear(512 * 7 * 7, 4096),
+            nn.ReLU(True),
+            nn.Dropout(p=0.5),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(p=0.5),
+            nn.Linear(4096, num_classes)
+        )
 
     def forward(self, x):
         return self.model(x)
 
 # Hyperparameters
 batch_size = 32
-learning_rate = 0.001
+learning_rate = 0.00001
 num_epochs = 200
 
 # Data Transformations (resize, normalize, etc.)
@@ -196,7 +209,6 @@ print('train_labels 1', len([l for l in train_labels if l == 1]))
 print('val_labels 0', len([l for l in val_labels if l == 0]))
 print('val_labels 1', len([l for l in val_labels if l == 1]))
 
-
 # Create Dataset and DataLoader
 train_dataset = ROPDataset(train_paths[:, 0], train_paths[:, 1], train_labels, transform=transform)
 val_dataset = ROPDataset(val_paths[:, 0], val_paths[:, 1], val_labels, transform=transform)
@@ -211,8 +223,6 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 # Training Loop
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-print('runing on device', device)
-
 
 history = []
 
@@ -226,7 +236,6 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels)
-
         loss.backward()
         optimizer.step()
 
@@ -251,9 +260,10 @@ for epoch in range(num_epochs):
 
 
 # Save the trained model
-torch.save(model.state_dict(), os.path.join(image_dir, "rop_classifier_densenet121-clahe-not-cropped.pth"))
+torch.save(model.state_dict(), os.path.join(image_dir, "rop_classifier_vgg19_clahe-not-cropped.pth"))
 
 
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 # Load the saved model
 model.eval()  # Set the model to evaluation mode
 model.to(device)
@@ -270,8 +280,6 @@ def evaluate(model, data_loader):
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
             _, preds = torch.max(outputs, 1)
-            # preds = torch.nn.functional.softmax(outputs[0], dim=0)
-
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
             all_images.extend(image)
@@ -298,9 +306,9 @@ print(conf_matrix)
 
 evaluation(test_labels, test_preds, ['Normal', 'Plus'], '')
 
-plt.figure()
+plt.figure(figsize=(8, 6))
 plt.plot(history, label='Train Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
-plt.savefig('loss-densenet121.png')
+plt.savefig('loss-vgg19.png')

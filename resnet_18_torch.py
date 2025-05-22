@@ -153,7 +153,7 @@ class ROPClassifier(nn.Module):
 # Hyperparameters
 batch_size = 32
 learning_rate = 0.001
-num_epochs = 200
+num_epochs = 150
 
 # Data Transformations (resize, normalize, etc.)
 transform = transforms.Compose([
@@ -162,6 +162,11 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
+print('batch_size:', batch_size)
+print('learning_rate:', learning_rate)
+print('num_epochs:', num_epochs)
+print('transform:', transform)
+
 # Load Data
 image_dir = 'D:/ROP/dataset/'
 
@@ -169,9 +174,9 @@ def load_images_from_folder(folder):
     images = []
     labels = []
     for label in ['0', '1']:
-        path = os.path.join(folder, 'clahe', label)
+        path = os.path.join(folder, label)
         for filename in os.listdir(path):
-            images.append([os.path.join(path, filename), os.path.join(folder, 'clahe', label, filename)])
+            images.append([os.path.join(path, filename), os.path.join(folder, label, filename)])
             labels.append(int(label))
 
     return images, labels
@@ -240,7 +245,7 @@ for epoch in range(num_epochs):
     history.append([running_loss/len(train_loader), val_loss])
 
 # Save the trained model
-torch.save(model.state_dict(), os.path.join(image_dir, "rop_classifier_resnet18_clahe_mask.pth"))
+torch.save(model.state_dict(), os.path.join(image_dir, "rop_classifier_resnet18_clahe_mask-without-cropped.pth"))
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 # Load the saved model

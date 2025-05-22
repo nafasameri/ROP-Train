@@ -176,6 +176,11 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
+print('batch_size:', batch_size)
+print('learning_rate:', learning_rate)
+print('num_epochs:', num_epochs)
+print('transform:', transform)
+
 # Load Data
 image_dir = 'D:/ROP/dataset/'
 
@@ -183,9 +188,9 @@ def load_images_from_folder(folder):
     images = []
     labels = []
     for label in ['0', '1']:
-        path = os.path.join(folder, 'clahe', label)
+        path = os.path.join(folder, label)
         for filename in os.listdir(path):
-            images.append([os.path.join(path, filename), os.path.join(folder, 'clahe', label, filename)])
+            images.append([os.path.join(path, filename), os.path.join(folder, label, filename)])
             labels.append(int(label))
 
     return images, labels
@@ -255,7 +260,7 @@ for epoch in range(num_epochs):
 
 
 # Save the trained model
-torch.save(model.state_dict(), os.path.join(image_dir, "rop_classifier_vgg16_clahe.pth"))
+torch.save(model.state_dict(), os.path.join(image_dir, "rop_classifier_vgg16_clahe-not-cropped.pth"))
 
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
