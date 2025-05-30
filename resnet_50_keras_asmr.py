@@ -5,12 +5,15 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.keras.applications import ResNet50, VGG16
 from tensorflow.keras.optimizers import Adam
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, CSVLogger
 from sklearn.model_selection import train_test_split
 from PIL import Image
 from sklearn.metrics import roc_auc_score, classification_report, fbeta_score
 from sklearn.metrics import jaccard_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import matthews_corrcoef
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
 
@@ -123,9 +126,9 @@ def load_images_from_folder(folder):
     images = []
     labels = []
     for label in ['0', '1']:
-        path = os.path.join(folder, 'clahe', label)
+        path = os.path.join(folder, label)
         for filename in os.listdir(path):
-            images.append([os.path.join(path, filename), os.path.join(folder, 'clahe', label, filename)])
+            images.append([os.path.join(path, filename), os.path.join(folder, label, filename)])
             labels.append(int(label))
 
     return images, labels
@@ -177,16 +180,6 @@ x = Dense(128, activation="relu")(x)
 predictions = Dense(2, activation="softmax")(x)
 model = Model(inputs=base_model.input, outputs=predictions)
 
-# model = VGG16(
-#     include_top=False,
-#     weights="imagenet",
-#     input_tensor=None,
-#     input_shape=(224, 224, 3),
-#     pooling=None,
-#     classes=2,
-#     classifier_activation="softmax"
-# )
-
 # Create data generators
 train_gen = data_generator(train_paths[:, 1], train_labels, batch_size)
 val_gen = data_generator(val_paths[:, 1], val_labels, batch_size)
@@ -203,17 +196,21 @@ model.compile(optimizer=Adam(learning_rate=learning_rate), loss="binary_crossent
 
 model.summary()
 
+mcp_save = ModelCheckpoint(image_dir + 'rop_classifier_resnet50_clahe_mask.hdf5', save_best_only=True, monitor='val_loss', mode='min')
+reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=7, verbose=1, min_delta=1e-4, mode='min')
+
 # Fine-tune the model
 history = model.fit(
     train_gen,
     steps_per_epoch=steps_per_epoch,
     validation_data=val_gen,
     validation_steps=validation_steps,
-    epochs=num_epochs
+    epochs=num_epochs,
+    callbacks=[mcp_save, reduce_lr_loss, CSVLogger(image_dir + 'TrainParams.csv')]
 )
 
 # Evaluate the model
-val_images = np.array([preprocess_image(path) for path in val_paths])
+val_images = np.array([preprocess_image(path) for path in val_paths[:, 1]])
 val_labels_cat = tf.keras.utils.to_categorical(val_labels, num_classes=2)
 val_preds = np.argmax(model.predict(val_images), axis=1)
 
@@ -249,6 +246,6 @@ plt.legend()
 plt.savefig('loss-resnet50-amsr.png')
 
 # Save the model
-model.save(os.path.join(image_dir, "rop_classifier_resnet50_amsr_mask.h5"))
+# model.save(os.path.join(image_dir, "rop_classifier_resnet50_amsr_mask.h5"))
 
 evaluation(val_labels, val_preds, ['Normal', 'Plus'], '')

@@ -14,6 +14,7 @@ import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import pandas as pd
 
 import clahe
 import amsr
@@ -243,6 +244,11 @@ for epoch in range(num_epochs):
 
     print(f"Epoch {epoch+1}, Training Loss: {running_loss/len(train_loader):.4f}, Validation Loss: {val_loss:.4f}")
     history.append([running_loss/len(train_loader), val_loss])
+
+df = pd.DataFrame(history)
+# df.to_html('history.html')
+# df.to_csv('history.csv', encoding='utf-8')
+df.to_excel('history.xlsx')
 
 # Save the trained model
 torch.save(model.state_dict(), os.path.join(image_dir, "rop_classifier_resnet18_clahe_mask-without-cropped.pth"))

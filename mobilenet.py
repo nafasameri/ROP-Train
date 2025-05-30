@@ -5,13 +5,15 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.keras.applications import MobileNet
 from tensorflow.keras.optimizers import Adam
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, CSVLogger
 from sklearn.model_selection import train_test_split
 from PIL import Image
-import cv2
 from sklearn.metrics import classification_report, fbeta_score
 from sklearn.metrics import jaccard_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import matthews_corrcoef
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
 
@@ -117,26 +119,34 @@ def evaluation(y_true, y_pred, labels, path_experiment):
     plt.savefig('roc-mobilenet.png')
 
 
+image_dir = 'D:/ROP/dataset/'
 
 # Load images and labels
 def load_images_from_folder(folder):
     images = []
     labels = []
     for label in ['0', '1']:
-        path = os.path.join(folder, 'Clahe_mask_' + label)
-        # path = os.path.join(folder, 'AMSR_mask_' + label)
-        # path = os.path.join(folder, label + 'preproccessing')
-        # path = os.path.join(folder, label + ' cropped-preproccessing')
+        path = os.path.join(folder, label)
         for filename in os.listdir(path):
-            images.append(os.path.join(path, filename))
+            images.append([os.path.join(path, filename), os.path.join(folder, label, filename)])
             labels.append(int(label))
+
     return images, labels
 
-image_dir = 'D:/ROP/dataset/'
 image_paths, labels = load_images_from_folder(image_dir)
 
 # Split data into train and validation sets
 train_paths, val_paths, train_labels, val_labels = train_test_split(image_paths, labels, test_size=0.2, random_state=42)
+train_paths = np.array(train_paths)
+val_paths = np.array(val_paths)
+
+print('labels 0', len([l for l in labels if l == 0]))
+print('labels 1', len([l for l in labels if l == 1]))
+print('train_labels 0', len([l for l in train_labels if l == 0]))
+print('train_labels 1', len([l for l in train_labels if l == 1]))
+print('val_labels 0', len([l for l in val_labels if l == 0]))
+print('val_labels 1', len([l for l in val_labels if l == 1]))
+
 
 # Preprocessing function for data loading
 def preprocess_image(image_path):
@@ -158,20 +168,12 @@ def data_generator(image_paths, labels, batch_size):
             yield batch_images, tf.keras.utils.to_categorical(batch_labels, num_classes=2)
 
 # Parameters
-batch_size = 8
+batch_size = 16
 num_epochs = 200
 learning_rate = 0.0001
 
-# Build the model (using VGG16 as the backbone)
-# base_model = VGG16(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
-# base_model = VGG19(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
-# x = base_model.output
-# x = GlobalAveragePooling2D()(x)  # Flatten feature maps
-# x = Dense(128, activation="relu")(x)  # Dense layer with 128 neurons
-# predictions = Dense(2, activation="softmax")(x)  # Final softmax layer for 2 classes
-
-# base_model = MobileNet(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-base_model = MobileNet(include_top=False, input_shape=(224, 224, 3))
+base_model = MobileNet(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+# base_model = MobileNet(include_top=False, input_shape=(224, 224, 3))
 # Add custom layers on top
 x = base_model.output
 x = GlobalAveragePooling2D()(x)  # Pooling layer
@@ -191,12 +193,16 @@ model.compile(optimizer=Adam(learning_rate=learning_rate), loss="binary_crossent
 model.summary()
 
 # Create data generators
-train_gen = data_generator(train_paths, train_labels, batch_size)
-val_gen = data_generator(val_paths, val_labels, batch_size)
+train_gen = data_generator(train_paths[:, 1], train_labels, batch_size)
+val_gen = data_generator(val_paths[:, 1], val_labels, batch_size)
 
 # Train the model
-steps_per_epoch = len(train_paths) // batch_size
-validation_steps = len(val_paths) // batch_size
+steps_per_epoch = len(train_paths[:, 1]) // batch_size
+validation_steps = len(val_paths[:, 1]) // batch_size
+
+
+mcp_save = ModelCheckpoint(image_dir + 'rop_classifier_MobileNet_clahe.hdf5', save_best_only=True, monitor='val_loss', mode='min')
+reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=7, verbose=1, min_delta=1e-4, mode='min')
 
 
 # Fine-tune the model
@@ -205,11 +211,12 @@ history = model.fit(
     steps_per_epoch=steps_per_epoch,
     validation_data=val_gen,
     validation_steps=validation_steps,
-    epochs=num_epochs
+    epochs=num_epochs,
+    callbacks=[mcp_save, reduce_lr_loss, CSVLogger(image_dir + 'TrainParams.csv')]
 )
 
 # Evaluate the model
-val_images = np.array([preprocess_image(path) for path in val_paths])
+val_images = np.array([preprocess_image(path) for path in val_paths[:, 1]])
 val_labels_cat = tf.keras.utils.to_categorical(val_labels, num_classes=2)
 val_preds = np.argmax(model.predict(val_images), axis=1)
 
@@ -245,6 +252,6 @@ plt.legend()
 plt.show()
 
 # Save the model
-model.save(os.path.join(image_dir, "rop_classifier_MobileNet_clahe.h5"))
+# model.save(os.path.join(image_dir, "rop_classifier_MobileNet_clahe.h5"))
 
 evaluation(val_labels, val_preds, ['Normal', 'Plus'], '')
