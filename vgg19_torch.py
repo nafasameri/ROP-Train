@@ -143,26 +143,31 @@ class ROPDataset(Dataset):
 class ROPClassifier(nn.Module):
     def __init__(self, num_classes=2):
         super(ROPClassifier, self).__init__()
-        # self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
-        self.model = models.vgg19(pretrained=True)  # Using a pretrained ResNet18
+        backbone = models.vgg19(pretrained=True)
 
-        # Freeze all layers initially
-        for param in self.model.parameters():
-            param.requires_grad = False
-            
-        # Modify the classifier part
-        self.model.classifier = nn.Sequential(
-            nn.Linear(512 * 7 * 7, 4096),
+        # Freeze early layers, keep later layers trainable
+        for i, param in enumerate(backbone.parameters()):
+            param.requires_grad = i > 15  # Only unfreeze later layers
+
+        # More efficient feature extraction
+        self.features = backbone.features
+        self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
+
+        # More compact classifier with stronger regularization
+        self.classifier = nn.Sequential(
+            nn.Linear(512 * 7 * 7, 1024),  # Reduced from 4096
             nn.ReLU(True),
-            nn.Dropout(p=0.5),
-            nn.Linear(4096, 4096),
-            nn.ReLU(True),
-            nn.Dropout(p=0.5),
-            nn.Linear(4096, num_classes)
+            nn.Dropout(p=0.7),  # Increased dropout
+            nn.BatchNorm1d(1024),
+            nn.Linear(1024, num_classes)
         )
 
     def forward(self, x):
-        return self.model(x)
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.classifier(x)
+        return x
 
 # Hyperparameters
 batch_size = 32
@@ -171,7 +176,11 @@ num_epochs = 200
 
 # Data Transformations (resize, normalize, etc.)
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.Resize((256, 256)),
+    transforms.RandomRotation(15),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomCrop(224),
+    transforms.ColorJitter(brightness=0.1, contrast=0.1),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
@@ -218,7 +227,10 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 # Initialize model, loss, and optimizer
 model = ROPClassifier(num_classes=2)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+# optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+# Use these in your training loop
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)  # L2 regularization
+# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5)
 
 # Training Loop
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
