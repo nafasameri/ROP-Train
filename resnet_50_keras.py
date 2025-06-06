@@ -243,9 +243,9 @@ plt.ylabel("Accuracy")
 plt.title("Training and Validation Accuracy")
 plt.legend()
 
-plt.savefig('loss-resnet50-amsr.png')
+plt.savefig('loss-resnet50.png')
 
 # Save the model
-# model.save(os.path.join(image_dir, "rop_classifier_resnet50_amsr_mask.h5"))
+# model.save(os.path.join(image_dir, "rop_classifier_resnet50_mask.h5"))
 
 evaluation(val_labels, val_preds, ['Normal', 'Plus'], '')

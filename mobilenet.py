@@ -249,7 +249,7 @@ plt.ylabel("Accuracy")
 plt.title("Training and Validation Accuracy")
 plt.legend()
 
-plt.show()
+plt.savefig('loss-mobilenet.png')
 
 # Save the model
 # model.save(os.path.join(image_dir, "rop_classifier_MobileNet_clahe.h5"))
