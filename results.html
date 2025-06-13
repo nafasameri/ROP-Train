@@ -38,6 +38,8 @@
     <th>Jaccard</th>
     <th>AUC</th>
     <th>Confusion matrix [[tn  fp] [ fn tp]]</th>
+    <th>roc crave</th>
+    <th>loss crave</th>
   </tr>
 
   <tr>
@@ -52,6 +54,12 @@
     <td></td>
     <td></td>
     <td></td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
   <tr>
     <td>CLAHE Cropped</td>
@@ -64,7 +72,13 @@
     <td>0.6870</td>
     <td>0.81</td>
     <td>[[166  26] [ 37 111]]</td>
-  </tr>
+    <td>
+      <img width="300" src="\resnet18 clahe crop 200\roc-resnet18.png" alt="">
+    </td>
+    <td>
+      <img width="300" src="\resnet18 clahe crop 200\loss-resnet18.png" alt="">
+    </td>
+</tr>
   <tr>
     <td>ASMR</td>
     <td></td>
@@ -76,20 +90,32 @@
     <td></td>
     <td></td>
     <td></td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
 
   <tr>
     <td rowspan="3">ResNet 50</td>
     <td>CLAHE</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
+    <td>0.9088</td>
+    <td>0.9322</td>
+    <td>0.8783</td>
+    <td>0.9090</td>
+    <td>0.88</td>
+    <td>0.8934</td>
+    <td>0.8328</td>
+    <td>0.91</td>
+    <td>[[179  13] [ 18 130]]</td>
+    <td>
+      <img width="300" src="resnet50 200 clahe/roc-resnet50.png" alt="">
+    </td>
+    <td>
+      <img width="300" src="resnet50 200 clahe/loss-resnet50.png" alt="">
+    </td>
   </tr>
     <tr>
     <td>CLAHE Cropped</td>
@@ -102,6 +128,12 @@
     <td></td>
     <td></td>
     <td></td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
   <tr>
     <td>ASMR</td>
@@ -114,6 +146,12 @@
     <td></td>
     <td></td>
     <td></td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
 
   <tr>
@@ -128,6 +166,12 @@
     <td>0.6799</td>
     <td>0.81</td>
     <td>[[158  34] [ 31 117]]</td>
+    <td>
+      <img width="300" src="vgg16 claqhe 200/roc-vgg16.png" alt="">
+    </td>
+    <td>
+      <img width="300" src="vgg16 claqhe 200/loss-vgg16.png" alt="">
+    </td>
   </tr>
   <tr>
     <td>CLAHE Cropped</td>
@@ -140,6 +184,12 @@
     <td></td>
     <td></td>
     <td></td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
   <tr>
     <td>ASMR</td>
@@ -152,20 +202,32 @@
     <td></td>
     <td></td>
     <td></td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
 
   <tr>
     <td rowspan="3">VGG 19</td>
     <td>CLAHE</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
+    <td>0.7323</td>
+    <td>0.5520</td>
+    <td>0.9662</td>
+    <td>0.6244</td>
+    <td>0.97</td>
+    <td>0.7586</td>
+    <td>0.5698</td>
+    <td>0.76</td>
+    <td>[[106  86] [  5 143]]</td>
+    <td>
+      <img width="300" src="vgg19-change model clahe 200/roc-vgg19.png" alt="">
+    </td>
+    <td>
+      <img width="300" src="vgg19-change model clahe 200/loss.png" alt="">
+    </td>
   </tr>
   <tr>
     <td>CLAHE Cropped</td>
@@ -178,6 +240,12 @@
     <td></td>
     <td></td>
     <td></td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
   <tr>
     <td>ASMR</td>
@@ -190,6 +258,12 @@
     <td></td>
     <td></td>
     <td></td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
   <tr>
     <td rowspan="3">DenseNet 121</td>
@@ -203,6 +277,12 @@
     <td>0.7395</td>
     <td>0.85</td>
     <td>[[167  25] [ 26 122]]</td>
+    <td>
+      <img width="300" src="densenet121 clahe 200/roc-densenet121.png" alt="">
+    </td>
+    <td>
+      <img width="300" src="densenet121 clahe 200/loss-densenet121.png" alt="">
+    </td>
   </tr>
   <tr>
     <td>CLAHE Cropped</td>
@@ -215,6 +295,12 @@
     <td>0.7995</td>
     <td>0.89</td>
     <td>[[170  22] [ 16 132]]</td>
+    <td>
+      <img width="300" src="densenet121 clahe crop 200/roc-densenet121.png" alt="">
+    </td>
+    <td>
+      <img width="300" src="densenet121 clahe crop 200/loss.png" alt="">
+    </td>
   </tr>
   <tr>
     <td>ASMR</td>
@@ -227,20 +313,32 @@
     <td></td>
     <td></td>
     <td></td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
 
   <tr>
     <td rowspan="3">MobileNet</td>
     <td>CLAHE</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
+    <td>0.8617</td>
+    <td>0.9114</td>
+    <td>0.7972</td>
+    <td>0.8740</td>
+    <td>0.80</td>
+    <td>0.8339</td>
+    <td>0.7564</td>
+    <td>0.85</td>
+    <td>[[175  17] [ 30 118]]</td>
+    <td>
+      <img width="300" src="mobilenet 200 clahe/roc-mobilenet.png" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
   <tr>
     <td>CLAHE Cropped</td>
@@ -253,6 +351,12 @@
     <td></td>
     <td></td>
     <td></td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
   <tr>
     <td>ASMR</td>
@@ -265,6 +369,12 @@
     <td></td>
     <td></td>
     <td></td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
+    <td>
+      <img width="300" src="" alt="">
+    </td>
   </tr>
 </table>
 
