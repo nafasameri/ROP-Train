@@ -234,9 +234,9 @@ If you use this code in your research, please cite:
 ```bibtex
 @misc{rop-classification,
   title={Retinopathy of Prematurity Classification using Deep Learning},
-  author={[Your Name]},
+  author={[NafasAmeri]},
   year={2024},
-  howpublished={\url{https://github.com/[username]/rop-classification}}
+  howpublished={\url{https://github.com/nafasameri/ROP-Train}}
 }
 ```
 
@@ -244,7 +244,7 @@ If you use this code in your research, please cite:
 
 For questions, issues, or contributions, please:
 - Open an issue on GitHub
-- Contact: [your-email@domain.com]
+- Contact: [nafassameri@gmail.com]
 
 ## ⚠️ Medical Disclaimer
 
@@ -253,5 +253,3 @@ This software is for research purposes only and should not be used for clinical 
 ---
 
 **Keywords**: Retinopathy of Prematurity, Medical Image Analysis, Deep Learning, Computer Vision, Transfer Learning, PyTorch, TensorFlow, CLAHE, Medical AI
-EOF
-)
